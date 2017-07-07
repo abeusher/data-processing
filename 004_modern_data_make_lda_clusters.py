@@ -4,8 +4,11 @@ import sys
 reload(sys)
 sys.setdefaultencoding("utf-8")
 # import time
-import gzip
-
+# from collections import defaultdict
+import os
+import tempfile
+TEMP_FOLDER = tempfile.gettempdir()
+from gensim import corpora, models, similarities
 
 MAX_LINES_TO_PROCESS = 1000000
 
@@ -31,23 +34,84 @@ def name2grams(name_phrase):
     return all_words
 
 
+def get_dictionary():
+    print 'Loading dictionary'
+    filename = "f:/data/004_modernbusinessbsolutions/name_grams.txt"
+    file = open(filename, 'rU')   
+    texts = []
+    for line in file:
+        try:
+            line.encode('ascii')
+        except Exception, e:
+          continue
+        words = line.split()
+        texts.append(words)
+    dictionary = corpora.Dictionary(texts)
+    print 'Filtering extremes'
+    dictionary.filter_extremes(no_below=10, no_above=0.7)
+    print 'Removing 15 most common'
+    dictionary.filter_n_most_frequent(15)
+    print 'Compacting dictionary'
+    dictionary.compactify() 
+    return dictionary
+
+
 def load_name_documents():
     filename = "f:/data/004_modernbusinessbsolutions/name_grams.txt"
     file = open(filename, 'rU')
-    # fout = gzip.open('f:/data/004_modernbusinessbsolutions/modern_business_solutions.txt.gz', 'wb')    
-    counter = 0
+    # fout = gzip.open('f:/data/004_modernbusinessbsolutions/modern_business_solutions.txt.gz', 'wb')
+    #texts = [[word for word in line.split()] for line in file]
+    texts = []
     for line in file:
-        counter += 1
-        if counter % 250000 == 0:
-            print counter
-        if counter > 1000000:
-            return
-        line = line.strip()
-        print line
+        try:
+            line.encode('ascii')
+        except Exception, e:
+          continue
+        words = line.split()
+        texts.append(words)
+        #for text in texts:
+        #  print text
+        """
+        #https://github.com/RaRe-Technologies/gensim/blob/develop/docs/notebooks/Corpora_and_Vector_Spaces.ipynb
+        frequency = defaultdict(int)
+        for text in texts:
+            for token in text:
+                frequency[token] += 1
+        texts = [[token for token in text if frequency[token] > 1] for text in texts]
+        for text in text:
+          print text
+        """
+    print 'Making dictionary'
+    dictionary = corpora.Dictionary(texts)            
+    print 'Filtering extremes'
+    dictionary.filter_extremes(no_below=10, no_above=0.7)
+    print 'Removing 15 most common'
+    dictionary.filter_n_most_frequent(15)
+    print 'Compacting dictionary'
+    dictionary.compactify()
+    print "Saving dictionary"
+    dictionary.save('c:/temp/gensim/c/name_grams.dict')
+    dictionary.save_as_text('c:/temp/gensim/c/name_grams_text.txt', sort_by_word=False)
+    print 'Dictionary size', len(dictionary)# 163908 unique name fragments
+    print 'creating corpus of dictionary and texts'
+    corpus = [dictionary.doc2bow(text) for text in texts]
+    print 'Saving corpus'
+    corpora.MmCorpus.serialize('c:/temp/gensim/c/name_grams.mm', corpus)
+
+
+def load_dictionary():
+    dictionary = get_dictionary()    
+    corpus = corpora.MmCorpus('c:/temp/gensim/c/name_grams.mm')
+    print 'make an LDA model'
+    # lda = models.LdaModel(corpus, id2word=dictionary, num_topics=10)
+    # https://rare-technologies.com/multicore-lda-in-python-from-over-night-to-over-lunch/
+    lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=10, workers=3)
+    lda.save('c:/temp/gensim/c/model.lda') # same for tfidf, lda, ...
 
 
 def main():
-    load_name_documents()
+    # load_name_documents()
+    load_dictionary()
 
 
 if __name__ == '__main__':

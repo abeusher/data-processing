@@ -22,11 +22,11 @@ def name2grams(name_phrase):
     # http://locallyoptimal.com/blog/2013/01/20/elegant-n-gram-generation-in-python/
     simple_trigrams = zip(*[name_phrase[i:] for i in range(3)])
     word_trigrams = simple2word(simple_trigrams)
-    simple_quadgrams = zip(*[name_phrase[i:] for i in range(4)])
-    word_quadgrams = simple2word(simple_quadgrams)
+    #simple_quadgrams = zip(*[name_phrase[i:] for i in range(4)])
+    #word_quadgrams = simple2word(simple_quadgrams)
     all_words = []
     all_words.extend(word_trigrams)
-    all_words.extend(word_quadgrams)
+    #all_words.extend(word_quadgrams)
     all_words.sort()
     return all_words
 
